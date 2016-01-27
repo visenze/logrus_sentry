@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/getsentry/raven-go"
+	"github.com/hongshibao/logrus"
 )
 
 var (
@@ -155,11 +155,23 @@ func NewWithClientSentryHook(client *raven.Client, levels []logrus.Level) (*Sent
 // are extracted from entry.Data (if they are found)
 // These fields are: logger, server_name and http_request
 func (hook *SentryHook) Fire(entry *logrus.Entry) error {
+	tags := make([]raven.Tag, 0, len(entry.Tags))
+	for k, v := range entry.Tags {
+		tags = append(
+			tags, raven.Tag{
+				Key:   k,
+				Value: v,
+			},
+		)
+	}
+
 	packet := &raven.Packet{
-		Message:   entry.Message,
-		Timestamp: raven.Timestamp(entry.Time),
-		Level:     severityMap[entry.Level],
-		Platform:  "go",
+		Message:     entry.Message,
+		Timestamp:   raven.Timestamp(entry.Time),
+		Level:       severityMap[entry.Level],
+		Platform:    "go",
+		Fingerprint: entry.Fingerprint,
+		Tags:        tags,
 	}
 
 	d := entry.Data
